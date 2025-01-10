@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View PDF</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #475569;
+            --success-color: #16a34a;
+            --warning-color: #ca8a04;
+            --danger-color: #dc2626;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+            --hover-color: #4b93db;
+            --dark-background: #1a1a1a;
+            --dark-card: #2d2d2d;
+            --dark-text: #e5e7eb;
+            --dark-border: #404040;
+            --sidebar-width: 300px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .app-header {
+            background-color: var(--card-background);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .pdf-container {
+            margin-top: 4rem;
+            padding: 1.5rem;
+            height: calc(100vh - 4rem);
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .pdf-viewer {
+            flex-grow: 1;
+            background: var(--card-background);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .pdf-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .folder-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .folder-title {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-color);
+            font-size: 1.1rem;
+        }
+
+        .subfolder-section {
+            margin-left: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .subfolder-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .pdf-list {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 1rem;
+        }
+
+        .pdf-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            display: block;
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: var(--hover-color);
+        }
+
+        .active-nav {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .active-nav:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar {
+    width: var(--sidebar-width);
+    background: var(--card-background);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 7rem); /* Account for margins and padding */
+    overflow: hidden; /* Prevent sidebar overflow */
+}
+
+.sidebar-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+        .rag-form {
+    margin-bottom: 1.5rem;
+    flex-shrink: 0; /* Prevent form from shrinking */
+}
+
+        .form-control {
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rag-response {
+    background-color: var(--hover-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    overflow-y: auto; /* Enable vertical scrolling */
+    max-height: 40vh; /* Limit height to prevent overtaking the sidebar */
+    word-wrap: break-word; /* Ensure long words don't overflow */
+    flex-shrink: 0; /* Prevent response from shrinking */
+}
+
+.query-history {
+    margin-top: 1.5rem;
+    flex-grow: 1;
+    overflow-y: auto;
+    min-height: 0; /* Allow container to shrink */
+}
+
+
+.query-item {
+    background-color: var(--hover-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    position: relative;
+    word-wrap: break-word; /* Handle long words */
+    overflow-wrap: break-word;
+}
+
+        .query-text {
+            margin-bottom: 0.5rem;
+            padding-right: 2rem;
+        }
+
+        .query-time {
+            color: var(--secondary-color);
+            font-size: 0.75rem;
+        }
+
+        .delete-query {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background-color: var(--dark-background);
+            color: var(--dark-text);
+        }
+
+        .dark-mode .app-header,
+        .dark-mode .sidebar,
+        .dark-mode .pdf-viewer,
+        .dark-mode .offcanvas {
+            background-color: var(--dark-card);
+            border-color: var(--dark-border);
+        }
+
+        .dark-mode .header-title,
+        .dark-mode .nav-link,
+        .dark-mode .folder-title {
+            color: var(--dark-text);
+        }
+
+        .dark-mode .form-control {
+            background-color: var(--dark-background);
+            border-color: var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        .dark-mode .rag-response,
+        .dark-mode .query-item {
+            background-color: var(--dark-background);
+        }
+
+        .dark-mode .query-time {
+            color: #9ca3af;
+        }
+
+        @media (max-width: 768px) {
+            .pdf-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <h1 class="header-title">
+            {{ filename }}
+        </h1>
+        <div class="header-actions">
+            <button class="btn btn-icon btn-light" 
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#offcanvasNavigation" 
+                    aria-controls="offcanvasNavigation"
+                    title="Navigation">
+                <i class="fas fa-folder-open"></i>
+            </button>
+            <button id="toggle-sidebar" class="btn btn-icon btn-light" title="Toggle RAG Sidebar">
+                <i class="fas fa-robot"></i>
+            </button>
+            <button id="dark-mode-toggle" class="btn btn-icon btn-light" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button id="mark-completed" class="btn btn-success">
+                <i class="fas fa-check me-2"></i>Mark Complete
+            </button>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home me-2"></i>Back to Home
+            </a>
+        </div>
+    </header>
+
+    <!-- Offcanvas Navigation -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavigation" aria-labelledby="offcanvasNavigationLabel">
+        <div class="offcanvas-header">
+            <h4 class="offcanvas-title" style="color: var(--dark-text);" id="offcanvasNavigationLabel">
+                <i class="fas fa-folder-open me-2"></i>
+                {{ folder or 'Root' }}
+                {% if subfolder %}
+                    / {{ subfolder }}
+                {% endif %}
+            </h4>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            {% for current_folder, subfolders in pdf_files.items() %}
+                <div class="folder-section">
+                    <div class="folder-title">
+                        {{ current_folder or 'Root' }}
+                    </div>
+                    {% if subfolders.get('') %}
+                        <ul class="pdf-list">
+                            {% for pdf in subfolders.get('') %}
+                                <li>
+                                    <a class="nav-link {% if current_folder == folder and not subfolder and pdf == filename %}active-nav{% endif %}"
+                                       href="{{ url_for('view_pdf', folder=current_folder, filename=pdf) }}">
+                                        {{ pdf }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+    
+                    {% for sub, pdfs in subfolders.items() if sub != '' %}
+                        <div class="subfolder-section">
+                            <div class="subfolder-title">
+                                <h4>{{ sub }}</h4>
+                            </div>
+                            <ul class="pdf-list">
+                                {% for pdf in pdfs %}
+                                    <li>
+                                        <a class="nav-link {% if current_folder == folder and sub == subfolder and pdf == filename %}active-nav{% endif %}"
+                                           href="{{ url_for('view_pdf', folder=current_folder, subfolder=sub, filename=pdf) }}">
+                                            {{ pdf }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="pdf-container">
+        <main class="pdf-viewer">
+            <iframe class="pdf-iframe" 
+                    src="{{ url_for('serve_pdf', folder=folder, subfolder=subfolder, filename=filename) }}"
+                    allow="fullscreen"></iframe>
+        </main>
+
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-robot me-2"></i>RAG Assistant
+            </div>
+            
+            <form id="rag-form" class="rag-form">
+                <div class="mb-3">
+                    <label for="rag-query" class="form-label">Ask a question about this PDF:</label>
+                    <input type="text" id="rag-query" class="form-control" placeholder="Enter your question...">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-paper-plane me-2"></i>Submit
+                </button>
+            </form>
+
+            <div id="rag-response" class="rag-response" style="display: none;"></div>
+
+            <div class="query-history">
+                <h6 class="mb-3">Recent Questions</h6>
+                <div id="query-history"></div>
+            </div>
+        </aside>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle sidebar
+        document.getElementById('toggle-sidebar').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('d-none');
+        });
+
+        // Dark mode toggle
+        const body = document.body;
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const darkModeIcon = darkModeToggle.querySelector('i');
+
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            body.classList.add('dark-mode');
+            darkModeIcon.classList.remove('fa-moon');
+            darkModeIcon.classList.add('fa-sun');
+        }
+
+        darkModeToggle.addEventListener('click', function() {
+            body.classList.toggle('dark-mode');
+            const isDarkMode = body.classList.contains('dark-mode');
+            
+            darkModeIcon.classList.toggle('fa-moon', !isDarkMode);
+            darkModeIcon.classList.toggle('fa-sun', isDarkMode);
+            
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+        });
+
+        // Mark as completed
+        document.getElementById('mark-completed').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-check me-2"></i>Completed';
+            
+            fetch('{{ url_for("update_pdf_scroll") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'filename': '{{ filename }}',
+                    'folder': '{{ folder }}',
+                    'subfolder': '{{ subfolder }}',
+                    'scroll_percentage': 'completed'
+                })
+            });
+        });
+
+        // RAG functionality
+        const ragForm = document.getElementById('rag-form');
+        const ragResponse = document.getElementById('rag-response');
+
+        ragForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const query = document.getElementById('rag-query').value;
+            
+            ragResponse.style.display = 'block';
+            ragResponse.innerHTML = '<div class="d-flex align-items-center gap-2"><i class="fas fa-spinner fa-spin"></i> Processing your question...</div>';
+
+            fetch('{{ url_for("query_rag") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: query,
+                    filename: '{{ filename }}',
+                    folder: '{{ folder }}',
+                    subfolder: '{{ subfolder }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                ragResponse.innerHTML = data.response;
+                loadQueryHistory();
+            })
+            .catch(error => {
+                ragResponse.innerHTML = '<div class="text-danger">Error processing your question. Please try again.</div>';
+                console.error('Error:', error);
+            });
+        });
+
+        // Query history functionality
+        function loadQueryHistory() {
+            fetch(`/get_query_history/${encodeURIComponent('{{ folder }}')}/${encodeURIComponent('{{ subfolder }}')}/${encodeURIComponent('{{ filename }}')}`)
+                .then(response => response.json())
+                .then(data => {
+                    const historyDiv = document.getElementById('query-history');
+                    historyDiv.innerHTML = '';
+                    
+                    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .forEach(item => {
+                            const queryDiv = document.createElement('div');
+                            queryDiv.className = 'query-item';
+                            queryDiv.innerHTML = `
+                                <div class="query-text">
+                                    ${item.query}
+                                    <button class="delete-query" data-id="${item.doc_id}">&times;</button>
+                                </div>
+                                <div class="query-time">
+                                    <i class="far fa-clock me-1"></i>${new Date(item.timestamp).toLocaleString()}
+                                </div>
+                            `;
+                            
+                            queryDiv.querySelector('.query-text').onclick = (e) => {
+                                if (!e.target.closest('.delete-query')) {
+                                    document.getElementById('rag-query').value = item.query;
+                                    ragResponse.style.display = 'block';
+                                    ragResponse.innerText = item.response;
+                                }
+                            };
+                            
+                            queryDiv.querySelector('.delete-query').onclick = (e) => {
+                                e.stopPropagation();
+                                deleteQuery(item.doc_id, queryDiv);
+                            };
+                            
+                            historyDiv.appendChild(queryDiv);
+                        });
+                });
+        }
+
+        function deleteQuery(queryId, queryElement) {
+            fetch('/delete_query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query_id: queryId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    queryElement.remove();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Load query history on page load
+        document.addEventListener('DOMContentLoaded', loadQueryHistory);
+    </script>
+</body>
+</html>
